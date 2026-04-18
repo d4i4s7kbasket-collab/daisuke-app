@@ -28,7 +28,7 @@ export default function ProductCard({ product: p }: ProductCardProps) {
     <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex gap-3">
         <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-gray-50 border border-gray-100">
-          <ProductImage src={p.imageUrl} alt={p.name} />
+          <ProductImage src={p.imageUrl} alt={p.name} category={p.category} name={p.name} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-bold text-gray-900 line-clamp-2 leading-snug">{p.name}</p>

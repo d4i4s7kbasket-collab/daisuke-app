@@ -24,9 +24,9 @@ import StoreDealList from '@/components/StoreDealList'
 import type { Product, Recommendation, SalesRecord, MarketTrend, DashboardStats, InventoryItem } from '@/lib/types'
 import { formatCurrency } from '@/lib/calculations'
 import { MOCK_DASHBOARD } from '@/lib/mockData'
-import type { UserSettings } from '@/lib/settings'
+import type { UserSettings, BudgetAdjustment } from '@/lib/settings'
 import { DEFAULT_SETTINGS } from '@/lib/settings'
-import { monthlySpent, budgetStatus } from '@/lib/budget'
+import { monthlySpent, budgetStatus, effectiveBudget } from '@/lib/budget'
 
 type Tab = 'recommendations' | 'store' | 'inventory' | 'dashboard' | 'products' | 'trends' | 'calculator' | 'history'
 
@@ -68,6 +68,22 @@ export default function HomePage() {
   const saveSettings = (s: UserSettings) => {
     setSettings(s)
     try { localStorage.setItem('sedori-settings', JSON.stringify(s)) } catch { /* ignore */ }
+  }
+
+  const addBudgetAdjustment = (a: BudgetAdjustment) => {
+    const next: UserSettings = {
+      ...settings,
+      budgetAdjustments: [...(settings.budgetAdjustments ?? []), a],
+    }
+    saveSettings(next)
+  }
+
+  const removeBudgetAdjustment = (id: string) => {
+    const next: UserSettings = {
+      ...settings,
+      budgetAdjustments: (settings.budgetAdjustments ?? []).filter((a) => a.id !== id),
+    }
+    saveSettings(next)
   }
 
   const fetchAll = useCallback(async () => {
@@ -157,7 +173,8 @@ export default function HomePage() {
   }
 
   const pendingCount = recommendations.filter((r) => r.status === 'pending').length
-  const budget = budgetStatus(settings.monthlyBudget, monthlySpent(inventory))
+  const effBudget = effectiveBudget(settings.monthlyBudget, settings.budgetAdjustments)
+  const budget = budgetStatus(effBudget, monthlySpent(inventory))
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -208,7 +225,12 @@ export default function HomePage() {
 
         {tab === 'recommendations' && (
           <div className="space-y-4">
-            <BudgetWidget monthlyBudget={settings.monthlyBudget} inventory={inventory} compact />
+            <BudgetWidget
+              monthlyBudget={settings.monthlyBudget}
+              inventory={inventory}
+              adjustments={settings.budgetAdjustments}
+              compact
+            />
             <RecommendationsTab recommendations={recommendations} onReview={setSelectedRec} />
           </div>
         )}
@@ -217,6 +239,9 @@ export default function HomePage() {
           <InventoryTab
             items={inventory}
             monthlyBudget={settings.monthlyBudget}
+            adjustments={settings.budgetAdjustments}
+            onAddAdjustment={addBudgetAdjustment}
+            onRemoveAdjustment={removeBudgetAdjustment}
             onUpdate={handleInventoryUpdate}
             onRemove={handleInventoryRemove}
             onShowTemplate={(item) => setTemplateProduct(item.product)}
@@ -224,7 +249,13 @@ export default function HomePage() {
         )}
         {tab === 'dashboard' && (
           <div className="space-y-4">
-            <BudgetWidget monthlyBudget={settings.monthlyBudget} inventory={inventory} />
+            <BudgetWidget
+              monthlyBudget={settings.monthlyBudget}
+              inventory={inventory}
+              adjustments={settings.budgetAdjustments}
+              onAddAdjustment={addBudgetAdjustment}
+              onRemoveAdjustment={removeBudgetAdjustment}
+            />
             <DashboardTab dashboard={dashboard} />
           </div>
         )}
@@ -303,17 +334,27 @@ function StoreTab() {
 }
 
 function InventoryTab({
-  items, monthlyBudget, onUpdate, onRemove, onShowTemplate,
+  items, monthlyBudget, adjustments, onAddAdjustment, onRemoveAdjustment,
+  onUpdate, onRemove, onShowTemplate,
 }: {
   items: InventoryItem[]
   monthlyBudget: number
+  adjustments?: BudgetAdjustment[]
+  onAddAdjustment?: (a: BudgetAdjustment) => void
+  onRemoveAdjustment?: (id: string) => void
   onUpdate: (id: string, patch: Partial<InventoryItem>) => void
   onRemove: (id: string) => void
   onShowTemplate: (item: InventoryItem) => void
 }) {
   return (
     <div className="space-y-4">
-      <BudgetWidget monthlyBudget={monthlyBudget} inventory={items} compact />
+      <BudgetWidget
+        monthlyBudget={monthlyBudget}
+        inventory={items}
+        adjustments={adjustments}
+        onAddAdjustment={onAddAdjustment}
+        onRemoveAdjustment={onRemoveAdjustment}
+      />
       <InventorySummary items={items} />
       <InventoryTable
         items={items}

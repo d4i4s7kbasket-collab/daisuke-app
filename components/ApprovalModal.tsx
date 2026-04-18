@@ -66,7 +66,7 @@ export default function ApprovalModal({ rec, onApprove, onReject, onClose, budge
           {/* 商品情報 */}
           <div className="flex gap-3">
             <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-gray-50 border border-gray-100">
-              <ProductImage src={p.imageUrl} alt={p.name} />
+              <ProductImage src={p.imageUrl} alt={p.name} category={p.category} name={p.name} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-gray-900 leading-snug">{p.name}</p>

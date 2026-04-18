@@ -34,6 +34,17 @@ function makeProduct(
   }
 }
 
+// 実商品の参考画像（Wikimedia Commons / 公有・CCライセンス系）。
+// 404の場合は ProductImage コンポーネントがカテゴリ絵文字のフォールバックを出す。
+const IMG = {
+  switch:   'https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Nintendo-Switch-wJoyCons-BlRd-Standing-FL.jpg/330px-Nintendo-Switch-wJoyCons-BlRd-Standing-FL.jpg',
+  airpods:  'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/AirPods_Pro_%282nd_generation%29.jpg/330px-AirPods_Pro_%282nd_generation%29.jpg',
+  pokemon:  'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/International_Pok%C3%A9mon_logo.svg/330px-International_Pok%C3%A9mon_logo.svg.png',
+  lego:     'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Lego_Color_Bricks.jpg/330px-Lego_Color_Bricks.jpg',
+  dyson:    'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Dyson_vacuum_cleaner.jpg/330px-Dyson_vacuum_cleaner.jpg',
+  ps5:      'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/PlayStation_5_and_DualSense_with_transparent_background.png/330px-PlayStation_5_and_DualSense_with_transparent_background.png',
+} as const
+
 export const MOCK_PRODUCTS: Product[] = [
   makeProduct(
     'p1',
@@ -42,7 +53,7 @@ export const MOCK_PRODUCTS: Product[] = [
     'amazon', 'mercari',
     28500, 36000, 0,
     'high', 1, 45213, 4.6,
-    'https://via.placeholder.com/200x200?text=Switch',
+    IMG.switch,
     'https://www.amazon.co.jp'
   ),
   makeProduct(
@@ -52,7 +63,7 @@ export const MOCK_PRODUCTS: Product[] = [
     'amazon', 'mercari',
     28000, 34500, 0,
     'high', 3, 89324, 4.8,
-    'https://via.placeholder.com/200x200?text=AirPods',
+    IMG.airpods,
     'https://www.amazon.co.jp'
   ),
   makeProduct(
@@ -62,7 +73,7 @@ export const MOCK_PRODUCTS: Product[] = [
     'rakuten', 'mercari',
     5500, 9200, 500,
     'high', 2, 21045, 4.9,
-    'https://via.placeholder.com/200x200?text=Pokemon',
+    IMG.pokemon,
     'https://www.rakuten.co.jp'
   ),
   makeProduct(
@@ -72,7 +83,7 @@ export const MOCK_PRODUCTS: Product[] = [
     'amazon', 'yahoo',
     15800, 22000, 0,
     'medium', 12, 12051, 4.7,
-    'https://via.placeholder.com/200x200?text=LEGO',
+    IMG.lego,
     'https://www.amazon.co.jp'
   ),
   makeProduct(
@@ -82,7 +93,7 @@ export const MOCK_PRODUCTS: Product[] = [
     'rakuten', 'mercari',
     68000, 87000, 0,
     'medium', 8, 34561, 4.5,
-    'https://via.placeholder.com/200x200?text=Dyson',
+    IMG.dyson,
     'https://www.rakuten.co.jp'
   ),
   makeProduct(
@@ -92,7 +103,8 @@ export const MOCK_PRODUCTS: Product[] = [
     'amazon', 'mercari',
     32000, 41000, 0,
     'medium', 5, 56781, 4.6,
-    'https://via.placeholder.com/200x200?text=Sony',
+    // Wikimedia に該当画像がないためフォールバック（🎧絵文字）に任せる
+    '',
     'https://www.amazon.co.jp'
   ),
   makeProduct(
@@ -102,7 +114,8 @@ export const MOCK_PRODUCTS: Product[] = [
     'rakuten', 'mercari',
     4500, 8500, 500,
     'high', 4, 18734, 4.8,
-    'https://via.placeholder.com/200x200?text=OnePiece',
+    // ワンピースカードはフリー画像が見つからないためフォールバック
+    '',
     'https://www.rakuten.co.jp'
   ),
   makeProduct(
@@ -112,7 +125,7 @@ export const MOCK_PRODUCTS: Product[] = [
     'amazon', 'mercari',
     66980, 74000, 0,
     'high', 2, 78432, 4.7,
-    'https://via.placeholder.com/200x200?text=PS5',
+    IMG.ps5,
     'https://www.amazon.co.jp'
   ),
 ]

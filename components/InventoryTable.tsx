@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import clsx from 'clsx'
-import { Package, Tag, CheckCircle2, Trash2, FileText, PackageCheck } from 'lucide-react'
+import { Package, Tag, CheckCircle2, Trash2, FileText, PackageCheck, Minus, Plus, Undo2 } from 'lucide-react'
 import type { InventoryItem, InventoryStatus } from '@/lib/types'
 import { formatCurrency, PLATFORM_SHORT } from '@/lib/calculations'
 import ProductImage from './ProductImage'
@@ -49,7 +49,7 @@ export default function InventoryTable({ items, onUpdate, onRemove, onShowTempla
               className="w-full p-4 flex items-start gap-3 text-left hover:bg-gray-50 transition-colors"
             >
               <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-gray-50 border border-gray-100">
-                <ProductImage src={it.product.imageUrl} alt={it.product.name} />
+                <ProductImage src={it.product.imageUrl} alt={it.product.name} category={it.product.category} name={it.product.name} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-1">
@@ -97,20 +97,95 @@ export default function InventoryTable({ items, onUpdate, onRemove, onShowTempla
                 </div>
 
                 {/* 販売数調整 */}
-                {it.status !== 'sold' && it.remaining > 0 && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        const next = Math.max(0, it.remaining - 1)
-                        onUpdate(it.id, { remaining: next, status: next === 0 ? 'sold' : it.status })
-                      }}
-                      className="flex-1 rounded-xl bg-emerald-600 text-white text-xs font-bold py-2 flex items-center justify-center gap-1 hover:bg-emerald-700 transition-colors"
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      1個販売として記録
-                    </button>
+                <div className="rounded-xl bg-white border border-gray-100 p-2.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-gray-500">残数</span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => {
+                          const next = Math.max(0, it.remaining - 1)
+                          // 0 になったら自動で販売済
+                          onUpdate(it.id, {
+                            remaining: next,
+                            status: next === 0 ? 'sold' : (it.status === 'sold' ? 'in_stock' : it.status),
+                          })
+                        }}
+                        disabled={it.remaining <= 0}
+                        aria-label="残数を1減らす"
+                        className={clsx(
+                          'h-7 w-7 rounded-full flex items-center justify-center border transition-colors',
+                          it.remaining <= 0
+                            ? 'border-gray-100 text-gray-200 cursor-not-allowed'
+                            : 'border-gray-200 text-gray-600 hover:bg-gray-50 active:scale-95'
+                        )}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </button>
+                      <span className="text-sm font-bold text-gray-900 tabular-nums min-w-[3ch] text-center">
+                        {it.remaining}
+                        <span className="text-[10px] text-gray-400 font-normal"> / {it.quantity}</span>
+                      </span>
+                      <button
+                        onClick={() => {
+                          const next = Math.min(it.quantity, it.remaining + 1)
+                          onUpdate(it.id, {
+                            remaining: next,
+                            // 残数が1以上になったら 'sold' から自動で 'in_stock' に戻す
+                            status: it.status === 'sold' && next > 0 ? 'in_stock' : it.status,
+                          })
+                        }}
+                        disabled={it.remaining >= it.quantity}
+                        aria-label="残数を1増やす"
+                        className={clsx(
+                          'h-7 w-7 rounded-full flex items-center justify-center border transition-colors',
+                          it.remaining >= it.quantity
+                            ? 'border-gray-100 text-gray-200 cursor-not-allowed'
+                            : 'border-gray-200 text-gray-600 hover:bg-gray-50 active:scale-95'
+                        )}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
-                )}
+
+                  <div className="flex items-center gap-2">
+                    {it.status !== 'sold' && it.remaining > 0 && (
+                      <button
+                        onClick={() => {
+                          const next = Math.max(0, it.remaining - 1)
+                          onUpdate(it.id, { remaining: next, status: next === 0 ? 'sold' : it.status })
+                        }}
+                        className="flex-1 rounded-xl bg-emerald-600 text-white text-xs font-bold py-2 flex items-center justify-center gap-1 hover:bg-emerald-700 transition-colors"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        1個販売として記録
+                      </button>
+                    )}
+
+                    {/* 販売済 → 取り消して在庫に戻す */}
+                    {(it.status === 'sold' || it.remaining < it.quantity) && (
+                      <button
+                        onClick={() => {
+                          const next = Math.min(it.quantity, it.remaining + 1)
+                          onUpdate(it.id, {
+                            remaining: next,
+                            status: next > 0 && it.status === 'sold' ? 'in_stock' : it.status,
+                          })
+                        }}
+                        disabled={it.remaining >= it.quantity}
+                        className={clsx(
+                          'flex-1 rounded-xl border text-xs font-bold py-2 flex items-center justify-center gap-1 transition-colors',
+                          it.remaining >= it.quantity
+                            ? 'border-gray-100 text-gray-300 cursor-not-allowed'
+                            : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                        )}
+                      >
+                        <Undo2 className="h-3.5 w-3.5" />
+                        販売を1個取り消す
+                      </button>
+                    )}
+                  </div>
+                </div>
 
                 <div className="flex gap-2">
                   <button
