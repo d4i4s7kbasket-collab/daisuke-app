@@ -1,0 +1,20 @@
+{
+  "name": "せどりナビ",
+  "short_name": "せどりナビ",
+  "description": "せどり商品の自動分析・利益計算・仕入れ提案・店舗スキャンをまとめて管理",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "lang": "ja",
+  "categories": ["business", "productivity", "shopping"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
