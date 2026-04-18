@@ -73,6 +73,7 @@ export default function StoreScanner() {
 
         {imageDataUrl ? (
           <div className="relative">
+            {/* eslint-disable-next-line @next/next/no-img-element -- data URL from camera capture, next/image doesn't support blob/data URLs */}
             <img
               src={imageDataUrl}
               alt="撮影した商品"

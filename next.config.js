@@ -1,14 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: [
-      'thumbnail.image.rakuten.co.jp',
-      'shop.r10s.jp',
-      'image.rakuten.co.jp',
-      'via.placeholder.com',
-      'm.media-amazon.com',
-      'images-na.ssl-images-amazon.com',
-      'images-fe.ssl-images-amazon.com',
+    remotePatterns: [
+      { protocol: 'https', hostname: 'thumbnail.image.rakuten.co.jp' },
+      { protocol: 'https', hostname: 'shop.r10s.jp' },
+      { protocol: 'https', hostname: 'image.rakuten.co.jp' },
+      { protocol: 'https', hostname: 'via.placeholder.com' },
+      { protocol: 'https', hostname: 'm.media-amazon.com' },
+      { protocol: 'https', hostname: 'images-na.ssl-images-amazon.com' },
+      { protocol: 'https', hostname: 'images-fe.ssl-images-amazon.com' },
     ],
   },
 }
