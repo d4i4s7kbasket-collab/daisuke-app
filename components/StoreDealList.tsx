@@ -6,7 +6,8 @@ import clsx from 'clsx'
 import type { StoreDeal, StoreType } from '@/lib/types'
 import { STORE_DEALS, STORE_LABELS, STORE_COLORS, DIFFICULTY_LABELS, dealsByStore } from '@/lib/storeDeals'
 import { formatCurrency, PLATFORM_LABELS, PLATFORM_SHORT } from '@/lib/calculations'
-import { sellPriceCheckUrl } from '@/lib/deepLinks'
+import { buildSellCandidatesFromQuery } from '@/lib/buyCandidates'
+import LinkChoiceModal from './LinkChoiceModal'
 
 const ALL_STORE_KEYS: StoreType[] = [
   'bookoff', 'hardoff', 'donki', 'yamada', 'bic', 'toysrus', 'geo', 'recycle', 'super', 'outlet',
@@ -78,23 +79,8 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
 function StoreDealCard({ deal }: { deal: StoreDeal }) {
   const d = deal
   const diff = DIFFICULTY_LABELS[d.difficulty]
-
-  // 販売先の売り切れ確認URL（疑似Productで流用）
-  const checkUrl = sellPriceCheckUrl({
-    id: d.id,
-    name: d.name,
-    imageUrl: '',
-    url: '',
-    category: d.category,
-    sourcePlatform: 'amazon',
-    sellPlatform: d.bestSellPlatform,
-    cost: {} as import('@/lib/types').CostBreakdown,
-    salesVelocity: 'medium',
-    rank: 0,
-    reviewCount: 0,
-    rating: 0,
-    lastUpdated: '',
-  }, d.bestSellPlatform)
+  const [showLinks, setShowLinks] = useState(false)
+  const candidates = buildSellCandidatesFromQuery(d.name, d.bestSellPlatform)
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -162,15 +148,23 @@ function StoreDealCard({ deal }: { deal: StoreDeal }) {
         ))}
       </div>
 
-      <a
-        href={checkUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 py-2 text-[11px] font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
+      <button
+        type="button"
+        onClick={() => setShowLinks(true)}
+        className="w-full flex items-center justify-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 py-2 text-[11px] font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
       >
         <ExternalLink className="h-3 w-3" />
         {PLATFORM_LABELS[d.bestSellPlatform]}で実売相場を見る
-      </a>
+      </button>
+
+      {showLinks && (
+        <LinkChoiceModal
+          title={`${PLATFORM_LABELS[d.bestSellPlatform]}で実売相場を確認`}
+          subtitle={d.name}
+          candidates={candidates}
+          onClose={() => setShowLinks(false)}
+        />
+      )}
     </div>
   )
 }

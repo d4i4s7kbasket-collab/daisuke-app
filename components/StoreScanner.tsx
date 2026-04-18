@@ -6,7 +6,8 @@ import clsx from 'clsx'
 import type { ScanResult, Platform } from '@/lib/types'
 import { buildScanResult } from '@/lib/storeScan'
 import { formatCurrency, getProfitColorClass, PLATFORM_SHORT, PLATFORM_LABELS } from '@/lib/calculations'
-import { sellPriceCheckUrl } from '@/lib/deepLinks'
+import { buildSellCandidatesFromQuery } from '@/lib/buyCandidates'
+import LinkChoiceModal from './LinkChoiceModal'
 
 const PLATFORM_BADGE: Record<string, string> = {
   mercari: 'bg-pink-100 text-pink-700 border-pink-200',
@@ -206,23 +207,8 @@ function PlatformRow({
   query: string
   isBest: boolean
 }) {
-  // 実売価格を確認するURL（疑似的な Product を作って sellPriceCheckUrl 流用）
-  const checkUrl = sellPriceCheckUrl({
-    id: 'scan',
-    name: query,
-    imageUrl: '',
-    url: '',
-    category: '',
-    sourcePlatform: 'amazon',
-    sellPlatform: q.platform as Platform,
-    cost: {} as import('@/lib/types').CostBreakdown,
-    salesVelocity: 'medium',
-    rank: 0,
-    reviewCount: 0,
-    rating: 0,
-    lastUpdated: '',
-  }, q.platform as Platform)
-
+  const [showLinks, setShowLinks] = useState(false)
+  const candidates = buildSellCandidatesFromQuery(query, q.platform as Platform)
   const conf = CONFIDENCE_LABEL[q.confidence]
 
   return (
@@ -267,16 +253,24 @@ function PlatformRow({
         <span className={clsx('text-xs font-bold', getProfitColorClass(q.profitRate))}>
           利益率 {q.profitRate.toFixed(1)}%
         </span>
-        <a
-          href={checkUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => setShowLinks(true)}
           className="flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[10px] font-bold text-indigo-700 hover:bg-indigo-100"
         >
           <ExternalLink className="h-2.5 w-2.5" />
           {PLATFORM_SHORT[q.platform]}の実売を見る
-        </a>
+        </button>
       </div>
+
+      {showLinks && (
+        <LinkChoiceModal
+          title={`${PLATFORM_LABELS[q.platform]}の実売を確認`}
+          subtitle={query}
+          candidates={candidates}
+          onClose={() => setShowLinks(false)}
+        />
+      )}
     </div>
   )
 }

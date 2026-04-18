@@ -1,10 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { ExternalLink, Star, ArrowRight, Search, Info } from 'lucide-react'
 import clsx from 'clsx'
 import type { Product } from '@/lib/types'
-import { formatCurrency, getProfitColorClass, getProfitBadgeClass, getVelocityBadgeClass, getVelocityLabel, PLATFORM_SHORT } from '@/lib/calculations'
-import { buyUrl, sellPriceCheckUrl } from '@/lib/deepLinks'
+import { formatCurrency, getProfitColorClass, getProfitBadgeClass, getVelocityBadgeClass, getVelocityLabel, PLATFORM_SHORT, PLATFORM_LABELS } from '@/lib/calculations'
+import { buildBuyCandidates, buildSellCandidates } from '@/lib/buyCandidates'
+import LinkChoiceModal from './LinkChoiceModal'
 import ProductImage from './ProductImage'
 
 const SOURCE_COLORS: Record<string, string> = {
@@ -21,6 +23,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product: p }: ProductCardProps) {
   const { cost } = p
+  const [linkMode, setLinkMode] = useState<null | 'buy' | 'sell'>(null)
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex gap-3">
@@ -73,25 +76,40 @@ export default function ProductCard({ product: p }: ProductCardProps) {
       </div>
 
       <div className="mt-2 grid grid-cols-2 gap-1.5">
-        <a
-          href={buyUrl(p)}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => setLinkMode('buy')}
           className="flex items-center justify-center gap-1 rounded-lg border border-gray-200 bg-white py-1.5 text-[10px] font-bold text-gray-700 hover:bg-gray-50 transition-colors"
         >
           <ExternalLink className="h-2.5 w-2.5" />
           {PLATFORM_SHORT[p.sourcePlatform]}の買値
-        </a>
-        <a
-          href={sellPriceCheckUrl(p)}
-          target="_blank"
-          rel="noopener noreferrer"
+        </button>
+        <button
+          type="button"
+          onClick={() => setLinkMode('sell')}
           className="flex items-center justify-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 py-1.5 text-[10px] font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
         >
           <Search className="h-2.5 w-2.5" />
           {PLATFORM_SHORT[p.sellPlatform]}の実売価格
-        </a>
+        </button>
       </div>
+
+      {linkMode === 'buy' && (
+        <LinkChoiceModal
+          title={`${PLATFORM_LABELS[p.sourcePlatform]}で買値を確認`}
+          subtitle={p.name}
+          candidates={buildBuyCandidates(p)}
+          onClose={() => setLinkMode(null)}
+        />
+      )}
+      {linkMode === 'sell' && (
+        <LinkChoiceModal
+          title={`${PLATFORM_LABELS[p.sellPlatform]}で実売価格を確認`}
+          subtitle={p.name}
+          candidates={buildSellCandidates(p)}
+          onClose={() => setLinkMode(null)}
+        />
+      )}
     </div>
   )
 }

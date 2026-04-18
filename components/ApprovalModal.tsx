@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { X, CheckCircle2, ExternalLink, Star, ArrowRight, ShoppingCart, Search, AlertTriangle, Info } from 'lucide-react'
+import { X, CheckCircle2, ExternalLink, Star, ArrowRight, ShoppingCart, Search, AlertTriangle, Info, ChevronRight } from 'lucide-react'
 import clsx from 'clsx'
 import type { Recommendation } from '@/lib/types'
 import { formatCurrency, getProfitColorClass, PLATFORM_SHORT, PLATFORM_LABELS } from '@/lib/calculations'
-import { amazonCartUrl, sellPriceCheckUrl, buyUrl } from '@/lib/deepLinks'
+import { amazonCartUrl, buyUrl } from '@/lib/deepLinks'
+import { buildBuyCandidates, buildSellCandidates } from '@/lib/buyCandidates'
 import ProductImage from './ProductImage'
+import LinkChoiceModal from './LinkChoiceModal'
 
 const BADGE: Record<string, string> = {
   amazon: 'bg-orange-100 text-orange-700 border-orange-200',
@@ -25,6 +27,7 @@ interface Props {
 
 export default function ApprovalModal({ rec, onApprove, onReject, onClose, budgetRemaining }: Props) {
   const [loading, setLoading] = useState<'approve' | 'reject' | null>(null)
+  const [linkMode, setLinkMode] = useState<null | 'buy' | 'sell'>(null)
   const { product: p } = rec
   const { cost } = p
 
@@ -41,8 +44,9 @@ export default function ApprovalModal({ rec, onApprove, onReject, onClose, budge
     typeof budgetRemaining === 'number' && totalInvestment > budgetRemaining
 
   const amazonCart = p.sourcePlatform === 'amazon' ? amazonCartUrl(p) : null
-  const sellCheck = sellPriceCheckUrl(p)
   const buyLink = buyUrl(p)
+  const buyCandidates = buildBuyCandidates(p)
+  const sellCandidates = buildSellCandidates(p)
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -153,38 +157,38 @@ export default function ApprovalModal({ rec, onApprove, onReject, onClose, budge
               表示の販売価格はAIの想定です。実際の相場は必ず売り切れ商品で確認してください。
             </p>
             <div className="grid grid-cols-2 gap-2">
-              <a
-                href={buyLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex flex-col items-center justify-center gap-0.5 rounded-xl bg-white border border-gray-200 py-2.5 hover:border-indigo-400 transition-colors"
+              <button
+                type="button"
+                onClick={() => setLinkMode('buy')}
+                className="flex flex-col items-center justify-center gap-0.5 rounded-xl bg-white border border-gray-200 py-2.5 hover:border-indigo-400 transition-colors text-left"
               >
                 <div className="flex items-center gap-1 text-[10px] font-bold text-gray-500">
                   <ExternalLink className="h-2.5 w-2.5" />買値を確認
+                  <ChevronRight className="h-2.5 w-2.5 text-gray-300" />
                 </div>
                 <div className="text-[11px] font-bold text-gray-900">
-                  {PLATFORM_SHORT[p.sourcePlatform]}の商品ページ
+                  {PLATFORM_SHORT[p.sourcePlatform]}の候補を選ぶ
                 </div>
                 <div className="text-[9px] text-gray-400">
-                  現在価格 {formatCurrency(cost.buyPrice)}
+                  現在価格 {formatCurrency(cost.buyPrice)} ／候補 {buyCandidates.length}件
                 </div>
-              </a>
-              <a
-                href={sellCheck}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex flex-col items-center justify-center gap-0.5 rounded-xl bg-white border border-gray-200 py-2.5 hover:border-indigo-400 transition-colors"
+              </button>
+              <button
+                type="button"
+                onClick={() => setLinkMode('sell')}
+                className="flex flex-col items-center justify-center gap-0.5 rounded-xl bg-white border border-gray-200 py-2.5 hover:border-indigo-400 transition-colors text-left"
               >
                 <div className="flex items-center gap-1 text-[10px] font-bold text-gray-500">
                   <Search className="h-2.5 w-2.5" />売値を確認
+                  <ChevronRight className="h-2.5 w-2.5 text-gray-300" />
                 </div>
                 <div className="text-[11px] font-bold text-gray-900">
-                  {PLATFORM_SHORT[p.sellPlatform]}の売り切れ
+                  {PLATFORM_SHORT[p.sellPlatform]}の候補を選ぶ
                 </div>
                 <div className="text-[9px] text-gray-400">
-                  AI想定 {formatCurrency(cost.sellPrice)}
+                  AI想定 {formatCurrency(cost.sellPrice)} ／候補 {sellCandidates.length}件
                 </div>
-              </a>
+              </button>
             </div>
             {amazonCart && (
               <a
@@ -236,6 +240,23 @@ export default function ApprovalModal({ rec, onApprove, onReject, onClose, budge
           </button>
         </div>
       </div>
+
+      {linkMode === 'buy' && (
+        <LinkChoiceModal
+          title={`${PLATFORM_LABELS[p.sourcePlatform]}で買値を確認`}
+          subtitle={p.name}
+          candidates={buyCandidates}
+          onClose={() => setLinkMode(null)}
+        />
+      )}
+      {linkMode === 'sell' && (
+        <LinkChoiceModal
+          title={`${PLATFORM_LABELS[p.sellPlatform]}で売値（実売）を確認`}
+          subtitle={p.name}
+          candidates={sellCandidates}
+          onClose={() => setLinkMode(null)}
+        />
+      )}
     </div>
   )
 }
