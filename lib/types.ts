@@ -21,6 +21,20 @@ export interface PriceBand {
   sellMax: number  // 販売帯の上限（良コンディション・相場上振れ時）
 }
 
+/**
+ * 発送プロファイル（商品サイズ別の実送料）。
+ * せどり分析の一番のブレ要因。サイズに合わない送料で試算すると
+ * 「黒字のはずが赤字」と表示されてしまうため、商品ごとに指定する。
+ */
+export type ShippingProfile =
+  | 'nekopos'         // ネコポス / クリックポスト（厚さ3cm以下、文庫・薄い本）
+  | 'yupacket'        // ゆうパケット（ちょっと厚め、単行本数冊）
+  | 'yupacket-plus'   // ゆうパケットプラス（BOX/トレカ BOX, 厚さ7cm以下）
+  | 'compact'         // 宅急便コンパクト（60サイズ未満、化粧品単品）
+  | 'standard'        // 宅急便60-80サイズ（小型家電など、デフォルト想定）
+  | 'large'           // 100-120サイズ（プロテイン3kg、小型掃除機など）
+  | 'xl'              // 140-160サイズ（全巻セット、LEGO大型、PS5本体）
+
 export interface CostBreakdown {
   buyPrice: number          // 仕入れ価格
   purchaseShipping: number  // 仕入れ送料
@@ -43,6 +57,8 @@ export interface Product {
   cost: CostBreakdown
   /** 現実的な価格帯。設定されていればカード・分析は中央値でコストを再計算する */
   priceBand?: PriceBand
+  /** 発送方法の目安（ない場合は 'standard' として扱う） */
+  shippingProfile?: ShippingProfile
   salesVelocity: SalesVelocity
   rank: number
   reviewCount: number

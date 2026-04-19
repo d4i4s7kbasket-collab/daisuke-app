@@ -1,4 +1,4 @@
-import type { Product, Recommendation, SalesRecord, MarketTrend, DashboardStats, PriceBand } from './types'
+import type { Product, Recommendation, SalesRecord, MarketTrend, DashboardStats, PriceBand, ShippingProfile } from './types'
 import { calcCostFromBand, calcCost } from './calculations'
 
 /**
@@ -14,6 +14,7 @@ function makeProductBand(params: {
   sellPlatform: Product['sellPlatform']
   band: PriceBand
   purchaseShipping?: number
+  shippingProfile?: ShippingProfile
   velocity: Product['salesVelocity']
   rank: number
   reviewCount: number
@@ -30,8 +31,9 @@ function makeProductBand(params: {
     category: params.category,
     sourcePlatform: params.sourcePlatform,
     sellPlatform: params.sellPlatform,
-    cost: calcCostFromBand(params.band, params.sellPlatform, purchaseShipping),
+    cost: calcCostFromBand(params.band, params.sellPlatform, purchaseShipping, undefined, params.shippingProfile),
     priceBand: params.band,
+    shippingProfile: params.shippingProfile,
     salesVelocity: params.velocity,
     rank: params.rank,
     reviewCount: params.reviewCount,
@@ -101,6 +103,7 @@ export const MOCK_PRODUCTS: Product[] = [
     category: 'ゲーム',
     sourcePlatform: 'amazon', sellPlatform: 'mercari',
     band: { buyMin: 26980, buyMax: 31980, sellMin: 32000, sellMax: 36500 },
+    shippingProfile: 'large',
     velocity: 'high', rank: 1, reviewCount: 45213, rating: 4.6,
     imageUrl: IMG.switch,
     url: 'https://www.amazon.co.jp/s?k=Nintendo+Switch+HAC-S-KABAA',
@@ -111,6 +114,7 @@ export const MOCK_PRODUCTS: Product[] = [
     category: '家電・オーディオ',
     sourcePlatform: 'amazon', sellPlatform: 'mercari',
     band: { buyMin: 32800, buyMax: 39800, sellMin: 31000, sellMax: 35500 },
+    shippingProfile: 'compact',
     velocity: 'high', rank: 3, reviewCount: 89324, rating: 4.8,
     imageUrl: IMG.airpods,
     url: 'https://www.amazon.co.jp/s?k=AirPods+Pro+MTJV3J',
@@ -122,6 +126,7 @@ export const MOCK_PRODUCTS: Product[] = [
     sourcePlatform: 'rakuten', sellPlatform: 'mercari',
     band: { buyMin: 5500, buyMax: 7800, sellMin: 9500, sellMax: 13500 },
     purchaseShipping: 500,
+    shippingProfile: 'yupacket-plus',
     velocity: 'high', rank: 2, reviewCount: 21045, rating: 4.9,
     imageUrl: IMG.pokemon,
     url: 'https://search.rakuten.co.jp/search/mall/%E3%83%9D%E3%82%B1%E3%83%A2%E3%83%B3+151+BOX/',
@@ -132,6 +137,7 @@ export const MOCK_PRODUCTS: Product[] = [
     category: 'おもちゃ・ホビー',
     sourcePlatform: 'amazon', sellPlatform: 'yahoo',
     band: { buyMin: 48000, buyMax: 64800, sellMin: 78000, sellMax: 98000 },
+    shippingProfile: 'xl',
     velocity: 'medium', rank: 12, reviewCount: 4230, rating: 4.8,
     imageUrl: IMG.lego,
     url: 'https://www.amazon.co.jp/s?k=LEGO+42143',
@@ -142,6 +148,7 @@ export const MOCK_PRODUCTS: Product[] = [
     category: '家電',
     sourcePlatform: 'rakuten', sellPlatform: 'mercari',
     band: { buyMin: 68000, buyMax: 89800, sellMin: 78000, sellMax: 95000 },
+    shippingProfile: 'xl',
     velocity: 'medium', rank: 8, reviewCount: 12560, rating: 4.5,
     imageUrl: IMG.dyson,
     url: 'https://search.rakuten.co.jp/search/mall/%E3%83%80%E3%82%A4%E3%82%BD%E3%83%B3+V12+SV46/',
@@ -152,6 +159,7 @@ export const MOCK_PRODUCTS: Product[] = [
     category: 'オーディオ',
     sourcePlatform: 'amazon', sellPlatform: 'mercari',
     band: { buyMin: 38500, buyMax: 49500, sellMin: 36000, sellMax: 44000 },
+    shippingProfile: 'standard',
     velocity: 'medium', rank: 5, reviewCount: 56781, rating: 4.6,
     url: 'https://www.amazon.co.jp/s?k=WH-1000XM5',
   }),
@@ -162,6 +170,7 @@ export const MOCK_PRODUCTS: Product[] = [
     sourcePlatform: 'rakuten', sellPlatform: 'mercari',
     band: { buyMin: 5800, buyMax: 8500, sellMin: 9200, sellMax: 14000 },
     purchaseShipping: 500,
+    shippingProfile: 'yupacket-plus',
     velocity: 'high', rank: 4, reviewCount: 8734, rating: 4.8,
     url: 'https://search.rakuten.co.jp/search/mall/%E3%83%AF%E3%83%B3%E3%83%94%E3%83%BC%E3%82%B9%E3%82%AB%E3%83%BC%E3%83%89+OP-05+BOX/',
   }),
@@ -171,6 +180,7 @@ export const MOCK_PRODUCTS: Product[] = [
     category: 'ゲーム',
     sourcePlatform: 'amazon', sellPlatform: 'mercari',
     band: { buyMin: 66980, buyMax: 79980, sellMin: 62000, sellMax: 72000 },
+    shippingProfile: 'xl',
     velocity: 'high', rank: 2, reviewCount: 78432, rating: 4.7,
     imageUrl: IMG.ps5,
     url: 'https://www.amazon.co.jp/s?k=PlayStation+5+CFI-2000A01',
@@ -183,6 +193,7 @@ export const MOCK_PRODUCTS: Product[] = [
     category: '本',
     sourcePlatform: 'amazon', sellPlatform: 'mercari',
     band: { buyMin: 4500, buyMax: 8800, sellMin: 9800, sellMax: 14800 },
+    shippingProfile: 'xl',
     velocity: 'high', rank: 6, reviewCount: 3450, rating: 4.7,
     url: 'https://www.amazon.co.jp/s?k=%E5%91%AA%E8%A1%93%E5%BB%BB%E6%88%A6+%E5%85%A8%E5%B7%BB+%E3%82%BB%E3%83%83%E3%83%88',
   }),
@@ -192,6 +203,7 @@ export const MOCK_PRODUCTS: Product[] = [
     category: '本',
     sourcePlatform: 'amazon', sellPlatform: 'mercari',
     band: { buyMin: 1200, buyMax: 2500, sellMin: 2400, sellMax: 3600 },
+    shippingProfile: 'yupacket',
     velocity: 'medium', rank: 11, reviewCount: 620, rating: 4.4,
     url: 'https://www.amazon.co.jp/s?k=%E8%B5%A4%E6%9C%AC+%E6%97%A9%E7%A8%B2%E7%94%B0+%E6%94%BF%E7%B5%8C',
   }),
@@ -202,6 +214,7 @@ export const MOCK_PRODUCTS: Product[] = [
     sourcePlatform: 'rakuten', sellPlatform: 'mercari',
     band: { buyMin: 220, buyMax: 780, sellMin: 900, sellMax: 1450 },
     purchaseShipping: 0,
+    shippingProfile: 'nekopos',
     velocity: 'medium', rank: 15, reviewCount: 4120, rating: 4.5,
     url: 'https://books.rakuten.co.jp/search?sitem=%E8%BB%A2%E8%81%B7%E3%81%AE%E6%80%9D%E8%80%83%E6%B3%95',
   }),
@@ -213,6 +226,7 @@ export const MOCK_PRODUCTS: Product[] = [
     category: '日用品',
     sourcePlatform: 'amazon', sellPlatform: 'amazon',
     band: { buyMin: 2180, buyMax: 3280, sellMin: 3980, sellMax: 4780 },
+    shippingProfile: 'standard',
     velocity: 'high', rank: 9, reviewCount: 15420, rating: 4.6,
     url: 'https://www.amazon.co.jp/s?k=%E3%82%A2%E3%82%BF%E3%83%83%E3%82%AFZERO+%E8%A9%B0%E6%9B%BF%E3%81%88+3%E8%A2%8B',
   }),
@@ -222,6 +236,7 @@ export const MOCK_PRODUCTS: Product[] = [
     category: '日用品',
     sourcePlatform: 'rakuten', sellPlatform: 'mercari',
     band: { buyMin: 18800, buyMax: 24800, sellMin: 22500, sellMax: 28500 },
+    shippingProfile: 'compact',
     velocity: 'medium', rank: 14, reviewCount: 8920, rating: 4.7,
     url: 'https://search.rakuten.co.jp/search/mall/SK-II+%E3%83%95%E3%82%A7%E3%82%A4%E3%82%B7%E3%83%A3%E3%83%AB+230mL/',
   }),
@@ -231,6 +246,7 @@ export const MOCK_PRODUCTS: Product[] = [
     category: '日用品',
     sourcePlatform: 'rakuten', sellPlatform: 'amazon',
     band: { buyMin: 6980, buyMax: 8980, sellMin: 9800, sellMax: 12800 },
+    shippingProfile: 'large',
     velocity: 'medium', rank: 18, reviewCount: 23450, rating: 4.4,
     url: 'https://search.rakuten.co.jp/search/mall/%E3%82%A2%E3%83%AB%E3%83%97%E3%83%AD%E3%83%B3+WPC+3kg/',
   }),
