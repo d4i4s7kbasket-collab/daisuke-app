@@ -1,4 +1,4 @@
-import type { CostBreakdown, Platform } from './types'
+import type { CostBreakdown, Platform, PriceBand, SedoriDifficulty } from './types'
 import { getAverageShippingCost } from './shipping'
 import type { Prefecture } from './shipping'
 
@@ -45,6 +45,60 @@ export function calcCost(
     : 0
 
   return { buyPrice, purchaseShipping, platformFee, sellShipping, totalCost, sellPrice, profit, profitRate }
+}
+
+/**
+ * 価格帯（PriceBand）から想定コストを中央値ベースで作る。
+ * 仕入れ帯・販売帯それぞれの中央値をベースにし、1点固定ではなく
+ * 「想定値」としてカード表示・試算に使える値を返す。
+ */
+export function calcCostFromBand(
+  band: PriceBand,
+  sellPlatform: Platform,
+  purchaseShipping: number,
+  userPrefecture?: Prefecture
+): CostBreakdown {
+  const buy = Math.round((band.buyMin + band.buyMax) / 2)
+  const sell = Math.round((band.sellMin + band.sellMax) / 2)
+  return calcCost(buy, sell, sellPlatform, purchaseShipping, userPrefecture)
+}
+
+/** 帯の最悪ケース（仕入れ最大・販売最小）で利益率が取れるかを見る */
+export function calcWorstCase(
+  band: PriceBand,
+  sellPlatform: Platform,
+  purchaseShipping: number,
+  userPrefecture?: Prefecture
+): CostBreakdown {
+  return calcCost(band.buyMax, band.sellMin, sellPlatform, purchaseShipping, userPrefecture)
+}
+
+/** 帯の最良ケース（仕入れ最小・販売最大） */
+export function calcBestCase(
+  band: PriceBand,
+  sellPlatform: Platform,
+  purchaseShipping: number,
+  userPrefecture?: Prefecture
+): CostBreakdown {
+  return calcCost(band.buyMin, band.sellMax, sellPlatform, purchaseShipping, userPrefecture)
+}
+
+export const DIFFICULTY_LABEL: Record<SedoriDifficulty, string> = {
+  easy: '初心者◎',
+  normal: 'バランス',
+  hard: '上級向け',
+}
+
+export const DIFFICULTY_BADGE: Record<SedoriDifficulty, string> = {
+  easy: 'bg-sky-100 text-sky-700',
+  normal: 'bg-indigo-100 text-indigo-700',
+  hard: 'bg-rose-100 text-rose-700',
+}
+
+export const DIFFICULTY_DESC: Record<SedoriDifficulty, string> = {
+  easy: '入手性が高く回転も早い。資金少なめでも回しやすい。',
+  normal: '一定の相場観は必要だが、慣れれば安定して稼ぎやすい。',
+  hard: '相場・真贋・在庫管理が必要。利幅は大きいが外すと赤字。',
 }
 
 export function estimateSellPrice(

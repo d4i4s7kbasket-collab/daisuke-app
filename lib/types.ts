@@ -4,6 +4,23 @@ export type TrendDirection = 'rising' | 'stable' | 'falling'
 export type CompetitionLevel = 'high' | 'medium' | 'low'
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
 
+/** せどり難易度。初心者でも再現しやすいか / 知識や資金・回転が必要か */
+export type SedoriDifficulty = 'easy' | 'normal' | 'hard'
+
+/** 回転の早さ（投資回収期間の目安） */
+export type TimeHorizon = 'short' | 'medium' | 'long'
+
+/**
+ * 現実的な価格はその時の在庫状況・出品者・セールで大きく動くため、
+ * 1点の固定価格ではなく「帯」で持つ。表示・分析時に中央値を使う。
+ */
+export interface PriceBand {
+  buyMin: number   // 仕入れ帯の下限（店頭・セール時など）
+  buyMax: number   // 仕入れ帯の上限（通常時）
+  sellMin: number  // 販売帯の下限（早売り・競合多めの時）
+  sellMax: number  // 販売帯の上限（良コンディション・相場上振れ時）
+}
+
 export interface CostBreakdown {
   buyPrice: number          // 仕入れ価格
   purchaseShipping: number  // 仕入れ送料
@@ -24,6 +41,8 @@ export interface Product {
   sourcePlatform: Platform   // 仕入れ元
   sellPlatform: Platform     // 販売先
   cost: CostBreakdown
+  /** 現実的な価格帯。設定されていればカード・分析は中央値でコストを再計算する */
+  priceBand?: PriceBand
   salesVelocity: SalesVelocity
   rank: number
   reviewCount: number
@@ -40,6 +59,14 @@ export interface Recommendation {
   buyQuantity: number
   status: ApprovalStatus
   createdAt: string
+  /** せどり難易度。easy なら初心者向け、hard は資金か経験が要る */
+  difficulty?: SedoriDifficulty
+  /** 見つけ方のヒント（どの店舗・どの棚・いつ狙うか） */
+  findHint?: string
+  /** 注意点・リスク（返品率、偽物、規約違反など） */
+  risks?: string[]
+  /** 売切までの目安 */
+  timeHorizon?: TimeHorizon
 }
 
 export interface SalesRecord {

@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { X, CheckCircle2, ExternalLink, Star, ArrowRight, ShoppingCart, Search, AlertTriangle, Info, ChevronRight } from 'lucide-react'
+import { X, CheckCircle2, ExternalLink, Star, ArrowRight, ShoppingCart, Search, AlertTriangle, Info, ChevronRight, MapPin, ShieldAlert } from 'lucide-react'
 import clsx from 'clsx'
 import type { Recommendation } from '@/lib/types'
-import { formatCurrency, getProfitColorClass, PLATFORM_SHORT, PLATFORM_LABELS } from '@/lib/calculations'
+import { formatCurrency, getProfitColorClass, PLATFORM_SHORT, PLATFORM_LABELS, DIFFICULTY_LABEL, DIFFICULTY_BADGE, DIFFICULTY_DESC } from '@/lib/calculations'
 import { amazonCartUrl, buyUrl } from '@/lib/deepLinks'
 import { buildBuyCandidates, buildSellCandidates } from '@/lib/buyCandidates'
 import ProductImage from './ProductImage'
@@ -109,24 +109,95 @@ export default function ApprovalModal({ rec, onApprove, onReject, onClose, budge
 
           {/* コスト内訳（1個） */}
           <div>
-            <p className="text-[11px] font-semibold text-gray-500 mb-2">1個あたりのコスト内訳</p>
+            <p className="text-[11px] font-semibold text-gray-500 mb-2">
+              1個あたりのコスト内訳
+              {p.priceBand && <span className="text-gray-400 font-normal">（中央値ベース）</span>}
+            </p>
             <div className="rounded-xl border border-gray-100 overflow-hidden divide-y divide-gray-50">
-              <CostRow label="仕入れ価格" value={formatCurrency(cost.buyPrice)} />
+              <CostRow
+                label="仕入れ価格"
+                value={
+                  p.priceBand
+                    ? `${formatCurrency(p.priceBand.buyMin)}〜${formatCurrency(p.priceBand.buyMax)}`
+                    : formatCurrency(cost.buyPrice)
+                }
+              />
               {cost.purchaseShipping > 0 && (
                 <CostRow label="仕入れ送料" value={formatCurrency(cost.purchaseShipping)} />
               )}
               <CostRow label={`販売手数料（${PLATFORM_SHORT[p.sellPlatform]}）`} value={formatCurrency(cost.platformFee)} />
               <CostRow label="発送費用（全国平均）" value={formatCurrency(cost.sellShipping)} />
-              <CostRow label="販売価格（AI想定）" value={formatCurrency(cost.sellPrice)} accent estimate />
+              <CostRow
+                label={p.priceBand ? '販売価格（想定帯）' : '販売価格（AI想定）'}
+                value={
+                  p.priceBand
+                    ? `${formatCurrency(p.priceBand.sellMin)}〜${formatCurrency(p.priceBand.sellMax)}`
+                    : formatCurrency(cost.sellPrice)
+                }
+                accent
+                estimate
+              />
               <div className="bg-gray-50 px-3 py-2.5 flex justify-between items-center">
-                <span className="text-xs font-bold text-gray-700">純利益（1個）</span>
+                <span className="text-xs font-bold text-gray-700">純利益（1個・中央値）</span>
                 <span className={clsx('text-sm font-bold', getProfitColorClass(cost.profitRate))}>
                   {formatCurrency(cost.profit)}
                   <span className="ml-1 text-xs font-medium">({cost.profitRate.toFixed(1)}%)</span>
                 </span>
               </div>
             </div>
+            {p.priceBand && (
+              <p className="mt-1.5 text-[10px] text-gray-400 leading-snug">
+                実際の価格は仕入れ元・セール・出品者で上下します。承認前に下の「買値を確認」「売値を確認」から必ずリンク先の現行価格をチェックしてください。
+              </p>
+            )}
           </div>
+
+          {/* 難易度 */}
+          {rec.difficulty && (
+            <div className="rounded-xl bg-white border border-gray-200 p-3">
+              <div className="flex items-center gap-2 mb-1.5">
+                <p className="text-[11px] font-semibold text-gray-500">せどり難易度</p>
+                <span className={clsx('rounded-full px-2 py-0.5 text-[10px] font-bold', DIFFICULTY_BADGE[rec.difficulty])}>
+                  {DIFFICULTY_LABEL[rec.difficulty]}
+                </span>
+                {rec.timeHorizon && (
+                  <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-600">
+                    回転: {rec.timeHorizon === 'short' ? '早い(1-2週)' : rec.timeHorizon === 'medium' ? '中程度(1-2月)' : 'じっくり(3月+)'}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-gray-600 leading-relaxed">{DIFFICULTY_DESC[rec.difficulty]}</p>
+            </div>
+          )}
+
+          {/* 見つけ方 */}
+          {rec.findHint && (
+            <div className="rounded-xl bg-sky-50 border border-sky-100 p-3.5">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <MapPin className="h-3.5 w-3.5 text-sky-600" />
+                <p className="text-[11px] font-bold text-sky-700">見つけ方のヒント</p>
+              </div>
+              <p className="text-xs text-sky-900 leading-relaxed">{rec.findHint}</p>
+            </div>
+          )}
+
+          {/* 注意点 */}
+          {rec.risks && rec.risks.length > 0 && (
+            <div className="rounded-xl bg-rose-50 border border-rose-100 p-3.5">
+              <div className="flex items-center gap-1.5 mb-2">
+                <ShieldAlert className="h-3.5 w-3.5 text-rose-600" />
+                <p className="text-[11px] font-bold text-rose-700">注意点・リスク</p>
+              </div>
+              <ul className="space-y-1.5">
+                {rec.risks.map((risk, i) => (
+                  <li key={i} className="text-xs text-rose-900 leading-relaxed flex gap-1.5">
+                    <span className="text-rose-400 flex-shrink-0">•</span>
+                    <span>{risk}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* サマリー */}
           <div className="grid grid-cols-2 gap-2">

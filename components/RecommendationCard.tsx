@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { CheckCircle2, XCircle, Clock, ChevronRight, Star, ExternalLink, Search } from 'lucide-react'
 import clsx from 'clsx'
 import type { Recommendation } from '@/lib/types'
-import { formatCurrency, getProfitColorClass, PLATFORM_SHORT, PLATFORM_LABELS } from '@/lib/calculations'
+import { formatCurrency, getProfitColorClass, PLATFORM_SHORT, PLATFORM_LABELS, DIFFICULTY_LABEL, DIFFICULTY_BADGE } from '@/lib/calculations'
 import { buildBuyCandidates, buildSellCandidates } from '@/lib/buyCandidates'
 import LinkChoiceModal from './LinkChoiceModal'
 import ProductImage from './ProductImage'
@@ -81,23 +81,56 @@ export default function RecommendationCard({ rec, onReview }: Props) {
         {/* コスト内訳（コンパクト） */}
         <div className="mt-3 grid grid-cols-4 gap-1.5 rounded-xl bg-gray-50 p-2.5">
           {[
-            { label: '仕入れ', value: formatCurrency(cost.buyPrice) },
+            {
+              label: '仕入れ',
+              value: p.priceBand
+                ? `${formatCurrency(p.priceBand.buyMin)}〜${formatCurrency(p.priceBand.buyMax)}`
+                : formatCurrency(cost.buyPrice),
+              compact: !!p.priceBand,
+            },
             { label: '諸費用', value: formatCurrency(cost.purchaseShipping + cost.platformFee + cost.sellShipping) },
-            { label: '販売(想定)', value: formatCurrency(cost.sellPrice) },
-            { label: '純利益', value: formatCurrency(cost.profit), profit: true },
-          ].map(({ label, value, profit }) => (
+            {
+              label: '販売(想定)',
+              value: p.priceBand
+                ? `${formatCurrency(p.priceBand.sellMin)}〜${formatCurrency(p.priceBand.sellMax)}`
+                : formatCurrency(cost.sellPrice),
+              compact: !!p.priceBand,
+            },
+            { label: '純利益(中央値)', value: formatCurrency(cost.profit), profit: true },
+          ].map(({ label, value, profit, compact }) => (
             <div key={label} className="text-center">
               <p className="text-[9px] text-gray-400 mb-0.5">{label}</p>
-              <p className={clsx('text-[11px] font-medium', profit ? getProfitColorClass(cost.profitRate) + ' font-bold' : 'text-gray-700')}>{value}</p>
+              <p
+                className={clsx(
+                  'font-medium',
+                  compact ? 'text-[10px]' : 'text-[11px]',
+                  profit ? getProfitColorClass(cost.profitRate) + ' font-bold' : 'text-gray-700'
+                )}
+              >
+                {value}
+              </p>
             </div>
           ))}
         </div>
 
-        <div className="mt-2 flex items-center justify-between">
-          <span className={clsx('text-xs font-bold', getProfitColorClass(cost.profitRate))}>
-            利益率 {cost.profitRate.toFixed(1)}%
-          </span>
-          <span className="text-[11px] text-gray-400">
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className={clsx('text-xs font-bold', getProfitColorClass(cost.profitRate))}>
+              利益率 {cost.profitRate.toFixed(1)}%
+            </span>
+            {rec.difficulty && (
+              <span
+                className={clsx(
+                  'rounded-full px-2 py-0.5 text-[10px] font-bold',
+                  DIFFICULTY_BADGE[rec.difficulty]
+                )}
+                title="せどり難易度"
+              >
+                {DIFFICULTY_LABEL[rec.difficulty]}
+              </span>
+            )}
+          </div>
+          <span className="text-[11px] text-gray-400 whitespace-nowrap">
             {rec.buyQuantity}個 · 月{rec.estimatedMonthlySales}個想定
           </span>
         </div>

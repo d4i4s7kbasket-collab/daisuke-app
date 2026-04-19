@@ -424,29 +424,84 @@ function InventoryTab({
 
 /* ── Tabs ─────────────────────────────────── */
 
+type DiffFilter = 'all' | 'easy' | 'normal' | 'hard' | 'highProfit'
+
+const DIFF_FILTERS: { key: DiffFilter; label: string; hint: string }[] = [
+  { key: 'all',        label: 'すべて',       hint: '全ての提案を表示' },
+  { key: 'easy',       label: '初心者向け',   hint: '資金少なめ・再現性重視（本・日用品）' },
+  { key: 'normal',     label: 'バランス',     hint: '利益と難易度のバランス型' },
+  { key: 'hard',       label: '上級向け',     hint: '資金/知識が必要だが利幅大' },
+  { key: 'highProfit', label: '高利益順',     hint: '利益率の高い順に並べ替え' },
+]
+
 function RecommendationsTab({
   recommendations, onReview,
 }: { recommendations: Recommendation[]; onReview: (r: Recommendation) => void }) {
-  const pending = recommendations.filter((r) => r.status === 'pending')
+  const [filter, setFilter] = useState<DiffFilter>('all')
+
+  const filteredPending = (() => {
+    const pending = recommendations.filter((r) => r.status === 'pending')
+    if (filter === 'all') return pending
+    if (filter === 'highProfit') {
+      return [...pending].sort(
+        (a, b) => (b.product.cost.profitRate ?? 0) - (a.product.cost.profitRate ?? 0)
+      )
+    }
+    return pending.filter((r) => r.difficulty === filter)
+  })()
+
   const done = recommendations.filter((r) => r.status !== 'pending')
+  const currentHint = DIFF_FILTERS.find((f) => f.key === filter)?.hint
 
   return (
     <div className="space-y-4">
-      {pending.length > 0 ? (
+      {/* 難易度フィルタ */}
+      <div>
+        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
+          {DIFF_FILTERS.map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              onClick={() => setFilter(f.key)}
+              className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors ${
+                filter === f.key
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        {currentHint && (
+          <p className="mt-2 text-[10px] text-gray-400 leading-snug">{currentHint}</p>
+        )}
+      </div>
+
+      {filteredPending.length > 0 ? (
         <section>
           <div className="flex items-center gap-2 mb-3">
             <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-            <h3 className="text-xs font-semibold text-gray-500">承認待ち（{pending.length}件）— タップして確認</h3>
+            <h3 className="text-xs font-semibold text-gray-500">
+              {filter === 'all'
+                ? `承認待ち（${filteredPending.length}件）`
+                : `${DIFF_FILTERS.find((f) => f.key === filter)?.label}（${filteredPending.length}件）`}
+              {' '}— タップして確認
+            </h3>
           </div>
           <div className="space-y-3">
-            {pending.map((r) => <RecommendationCard key={r.id} rec={r} onReview={onReview} />)}
+            {filteredPending.map((r) => <RecommendationCard key={r.id} rec={r} onReview={onReview} />)}
           </div>
         </section>
       ) : (
         <div className="rounded-2xl border border-dashed border-gray-200 py-12 text-center">
           <Sparkles className="h-8 w-8 text-gray-200 mx-auto mb-2" />
-          <p className="text-sm text-gray-400">承認待ちの提案はありません</p>
-          <p className="text-xs text-gray-300 mt-1">次回の自動分析までお待ちください</p>
+          <p className="text-sm text-gray-400">
+            {filter === 'all' ? '承認待ちの提案はありません' : '条件に合う提案はありません'}
+          </p>
+          <p className="text-xs text-gray-300 mt-1">
+            {filter === 'all' ? '次回の自動分析までお待ちください' : 'フィルタを変えてみてください'}
+          </p>
         </div>
       )}
       {done.length > 0 && (
