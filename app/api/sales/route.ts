@@ -1,14 +1,20 @@
 import { NextResponse } from 'next/server'
-import { MOCK_SALES } from '@/lib/mockData'
 import type { SalesRecord } from '@/lib/types'
+import { addSale, listSales } from '@/lib/salesStore'
+import { requireAccountId } from '@/lib/session'
 
-let salesRecords: SalesRecord[] = [...MOCK_SALES]
+export const runtime = 'nodejs'
 
-export async function GET() {
-  return NextResponse.json({ sales: salesRecords })
+export async function GET(request: Request) {
+  const auth = await requireAccountId(request)
+  if (!auth.ok) return auth.response
+  const sales = await listSales(auth.accountId)
+  return NextResponse.json({ sales })
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAccountId(request)
+  if (!auth.ok) return auth.response
   const body = await request.json()
 
   const record: SalesRecord = {
@@ -24,6 +30,6 @@ export async function POST(request: Request) {
     soldAt: new Date().toISOString(),
   }
 
-  salesRecords = [record, ...salesRecords]
+  await addSale(auth.accountId, record)
   return NextResponse.json({ sale: record }, { status: 201 })
 }

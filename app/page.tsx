@@ -20,6 +20,7 @@ import TemplateModal from '@/components/TemplateModal'
 import BudgetWidget from '@/components/BudgetWidget'
 import StoreScanner from '@/components/StoreScanner'
 import StoreDealList from '@/components/StoreDealList'
+import LoginScreen from '@/components/LoginScreen'
 
 import type { Product, Recommendation, SalesRecord, MarketTrend, DashboardStats, InventoryItem } from '@/lib/types'
 import { formatCurrency } from '@/lib/calculations'
@@ -27,6 +28,7 @@ import { MOCK_DASHBOARD } from '@/lib/mockData'
 import type { UserSettings, BudgetAdjustment } from '@/lib/settings'
 import { DEFAULT_SETTINGS } from '@/lib/settings'
 import { monthlySpent, budgetStatus, effectiveBudget } from '@/lib/budget'
+import { authFetch, loadAuth, logout, type AuthState } from '@/lib/authClient'
 
 type Tab = 'recommendations' | 'store' | 'inventory' | 'dashboard' | 'products' | 'trends' | 'calculator' | 'history'
 
@@ -57,17 +59,46 @@ export default function HomePage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [templateProduct, setTemplateProduct] = useState<Product | null>(null)
 
-  // localStorage から設定を読み込む
+  // 認証状態。null = 未判定、undefined相当（loadAuth が null なら未ログイン）
+  const [auth, setAuth] = useState<AuthState | null>(null)
+  const [authChecked, setAuthChecked] = useState(false)
+
+  // 起動時: localStorage からログイン情報を復元
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('sedori-settings')
-      if (saved) setSettings(JSON.parse(saved))
-    } catch { /* ignore */ }
+    setAuth(loadAuth())
+    setAuthChecked(true)
   }, [])
 
-  const saveSettings = (s: UserSettings) => {
+  // ログイン状態が変わったら、サーバーから設定を読み直す
+  useEffect(() => {
+    if (!auth) { setSettings(DEFAULT_SETTINGS); return }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await authFetch('/api/settings')
+        if (res.status === 401) { handleLogout(); return }
+        if (!res.ok) return
+        const data = await res.json()
+        if (!cancelled && data?.settings) setSettings({ ...DEFAULT_SETTINGS, ...data.settings })
+      } catch { /* ignore */ }
+    })()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth?.token])
+
+  /** 設定をサーバーに保存し、ローカル state も更新する。 */
+  const saveSettings = async (s: UserSettings) => {
     setSettings(s)
-    try { localStorage.setItem('sedori-settings', JSON.stringify(s)) } catch { /* ignore */ }
+    if (!auth) return
+    try {
+      const res = await authFetch('/api/settings', {
+        method: 'PUT',
+        body: JSON.stringify(s),
+      })
+      if (res.status === 401) handleLogout()
+    } catch (err) {
+      console.error('設定保存エラー:', err)
+    }
   }
 
   const addBudgetAdjustment = (a: BudgetAdjustment) => {
@@ -86,16 +117,31 @@ export default function HomePage() {
     saveSettings(next)
   }
 
+  const handleLogout = useCallback(async () => {
+    await logout()
+    setAuth(null)
+    setInventory([])
+    setRecommendations([])
+    setSales([])
+    setSettings(DEFAULT_SETTINGS)
+  }, [])
+
   const fetchAll = useCallback(async () => {
+    if (!auth) return
     setLoading(true)
     try {
       const [pRes, aRes, rRes, sRes, iRes] = await Promise.all([
         fetch('/api/products'),
         fetch('/api/analyze'),
-        fetch('/api/recommendations'),
-        fetch('/api/sales'),
-        fetch('/api/inventory'),
+        authFetch('/api/recommendations'),
+        authFetch('/api/sales'),
+        authFetch('/api/inventory'),
       ])
+      // どれか一つでも 401 ならログアウトさせる
+      if ([rRes, sRes, iRes].some((r) => r.status === 401)) {
+        handleLogout()
+        return
+      }
       const [pData, aData, rData, sData, iData] = await Promise.all([
         pRes.json(), aRes.json(), rRes.json(), sRes.json(), iRes.json(),
       ])
@@ -111,18 +157,18 @@ export default function HomePage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [auth, handleLogout])
 
   useEffect(() => {
+    if (!auth) return
     fetchAll()
     const id = setInterval(fetchAll, 60 * 60 * 1000)
     return () => clearInterval(id)
-  }, [fetchAll])
+  }, [fetchAll, auth])
 
   const handleApprove = async (id: string) => {
-    const res = await fetch('/api/recommendations', {
+    const res = await authFetch('/api/recommendations', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status: 'approved' }),
     })
     const data = await res.json().catch(() => null)
@@ -134,9 +180,8 @@ export default function HomePage() {
   }
 
   const handleInventoryUpdate = async (id: string, patch: Partial<InventoryItem>) => {
-    const res = await fetch('/api/inventory', {
+    const res = await authFetch('/api/inventory', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, ...patch }),
     })
     const data = await res.json().catch(() => null)
@@ -146,14 +191,13 @@ export default function HomePage() {
   }
 
   const handleInventoryRemove = async (id: string) => {
-    await fetch(`/api/inventory?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+    await authFetch(`/api/inventory?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
     setInventory((prev) => prev.filter((i) => i.id !== id))
   }
 
   const handleReject = async (id: string) => {
-    await fetch('/api/recommendations', {
+    await authFetch('/api/recommendations', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status: 'rejected' }),
     })
     setRecommendations((prev) => prev.map((r) => r.id === id ? { ...r, status: 'rejected' } : r))
@@ -176,6 +220,16 @@ export default function HomePage() {
   const effBudget = effectiveBudget(settings.monthlyBudget, settings.budgetAdjustments)
   const budget = budgetStatus(effBudget, monthlySpent(inventory))
 
+  // 認証確認中の短い空白（チラつき防止）
+  if (!authChecked) {
+    return <div className="min-h-screen bg-gray-50" />
+  }
+
+  // 未ログインならログイン画面を表示
+  if (!auth) {
+    return <LoginScreen onLoggedIn={(a) => setAuth(a)} />
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header
@@ -184,6 +238,8 @@ export default function HomePage() {
         pendingCount={pendingCount}
         settings={settings}
         onOpenSettings={() => setShowSettings(true)}
+        accountName={auth.account.nickname}
+        onLogout={handleLogout}
       />
 
       {/* タブ */}

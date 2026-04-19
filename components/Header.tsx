@@ -1,6 +1,6 @@
 'use client'
 
-import { RefreshCw, Bell, TrendingUp, Settings } from 'lucide-react'
+import { RefreshCw, Bell, TrendingUp, Settings, LogOut } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -12,9 +12,15 @@ interface HeaderProps {
   pendingCount: number
   settings: UserSettings
   onOpenSettings: () => void
+  /** ログイン中のニックネーム（あればヘッダに表示） */
+  accountName?: string
+  /** ログアウトボタンを押したとき */
+  onLogout?: () => void
 }
 
-export default function Header({ lastUpdated, onRefresh, pendingCount, settings, onOpenSettings }: HeaderProps) {
+export default function Header({
+  lastUpdated, onRefresh, pendingCount, settings, onOpenSettings, accountName, onLogout,
+}: HeaderProps) {
   const [spinning, setSpinning] = useState(false)
   const [timeAgo, setTimeAgo] = useState<string | null>(null)
 
@@ -43,7 +49,7 @@ export default function Header({ lastUpdated, onRefresh, pendingCount, settings,
             <div>
               <h1 className="text-sm font-bold text-gray-900 leading-tight">せどりナビ</h1>
               <p className="text-[10px] text-gray-400 leading-none">
-                {settings.prefecture} · 更新 {timeAgo}
+                {accountName ? `${accountName} · ` : ''}{settings.prefecture} · 更新 {timeAgo}
               </p>
             </div>
           </div>
@@ -69,6 +75,15 @@ export default function Header({ lastUpdated, onRefresh, pendingCount, settings,
             >
               <RefreshCw className={`h-4 w-4 text-gray-500 transition-transform duration-700 ${spinning ? 'animate-spin' : ''}`} />
             </button>
+            {onLogout && (
+              <button
+                onClick={() => { if (confirm('ログアウトしますか？')) onLogout() }}
+                className="rounded-xl border border-gray-200 p-2 hover:bg-gray-50 transition-colors"
+                title="ログアウト"
+              >
+                <LogOut className="h-4 w-4 text-gray-500" />
+              </button>
+            )}
           </div>
         </div>
       </div>
