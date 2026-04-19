@@ -204,6 +204,24 @@ export default function HomePage() {
     setSelectedRec(null)
   }
 
+  /** 承認/見送り済みを「承認待ち」に戻す。在庫は触らない（ユーザー側で必要なら削除） */
+  const handleRevert = async (id: string) => {
+    setRecommendations((prev) => prev.map((r) => r.id === id ? { ...r, status: 'pending' } : r))
+    try {
+      const res = await authFetch('/api/recommendations', {
+        method: 'PATCH',
+        body: JSON.stringify({ id, status: 'pending' }),
+      })
+      if (!res.ok) {
+        // 失敗時はデータを再取得して整合性を取る
+        await fetchAll()
+      }
+    } catch (err) {
+      console.error('元に戻すのに失敗:', err)
+      await fetchAll()
+    }
+  }
+
   const handleSearch = async () => {
     if (!searchKeyword.trim()) return
     setLoading(true)
@@ -287,7 +305,7 @@ export default function HomePage() {
               adjustments={settings.budgetAdjustments}
               compact
             />
-            <RecommendationsTab recommendations={recommendations} onReview={setSelectedRec} />
+            <RecommendationsTab recommendations={recommendations} onReview={setSelectedRec} onRevert={handleRevert} />
           </div>
         )}
         {tab === 'store' && <StoreTab />}
@@ -435,8 +453,12 @@ const DIFF_FILTERS: { key: DiffFilter; label: string; hint: string }[] = [
 ]
 
 function RecommendationsTab({
-  recommendations, onReview,
-}: { recommendations: Recommendation[]; onReview: (r: Recommendation) => void }) {
+  recommendations, onReview, onRevert,
+}: {
+  recommendations: Recommendation[]
+  onReview: (r: Recommendation) => void
+  onRevert: (id: string) => void
+}) {
   const [filter, setFilter] = useState<DiffFilter>('all')
 
   const filteredPending = (() => {
@@ -506,9 +528,14 @@ function RecommendationsTab({
       )}
       {done.length > 0 && (
         <section>
-          <h3 className="text-xs font-semibold text-gray-400 mb-2">処理済み</h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold text-gray-400">処理済み（{done.length}件）</h3>
+            <p className="text-[10px] text-gray-300">「戻す」で承認待ちに戻せます</p>
+          </div>
           <div className="space-y-2">
-            {done.map((r) => <RecommendationCard key={r.id} rec={r} />)}
+            {done.map((r) => (
+              <RecommendationCard key={r.id} rec={r} onRevert={(rec) => onRevert(rec.id)} />
+            ))}
           </div>
         </section>
       )}

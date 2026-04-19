@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckCircle2, XCircle, Clock, ChevronRight, Star, ExternalLink, Search } from 'lucide-react'
+import { CheckCircle2, XCircle, Clock, ChevronRight, Star, ExternalLink, Search, Undo2 } from 'lucide-react'
 import clsx from 'clsx'
 import type { Recommendation } from '@/lib/types'
 import { formatCurrency, getProfitColorClass, PLATFORM_SHORT, PLATFORM_LABELS, DIFFICULTY_LABEL, DIFFICULTY_BADGE } from '@/lib/calculations'
@@ -25,9 +25,11 @@ const BADGE: Record<string, string> = {
 interface Props {
   rec: Recommendation
   onReview?: (rec: Recommendation) => void
+  /** 承認/見送り済みを「承認待ち」に戻す。処理済みカードに Undo ボタンを出す */
+  onRevert?: (rec: Recommendation) => void
 }
 
-export default function RecommendationCard({ rec, onReview }: Props) {
+export default function RecommendationCard({ rec, onReview, onRevert }: Props) {
   const { product: p, status } = rec
   const { cost } = p
   const s = STATUS[status]
@@ -76,6 +78,23 @@ export default function RecommendationCard({ rec, onReview }: Props) {
           </div>
 
           {isPending && <ChevronRight className="flex-shrink-0 h-4 w-4 text-gray-300 self-center" />}
+          {!isPending && onRevert && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                const msg = status === 'approved'
+                  ? 'この商品の承認を取り消して「承認待ち」に戻します。\n\n※ 既に追加された在庫はそのまま残ります。\n  不要な場合は「在庫管理」タブから削除してください。\n\n続行しますか？'
+                  : '見送りを取り消して「承認待ち」に戻します。'
+                if (window.confirm(msg)) onRevert(rec)
+              }}
+              className="flex-shrink-0 self-start flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-[10px] font-bold text-gray-600 hover:bg-gray-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors"
+              title="承認待ちに戻す"
+            >
+              <Undo2 className="h-3 w-3" />
+              戻す
+            </button>
+          )}
         </div>
 
         {/* コスト内訳（コンパクト） */}
